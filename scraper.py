@@ -1,17 +1,35 @@
-# This is a template for a Python scraper on Morph (https://morph.io)
-# including some code snippets below that you should find helpful
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+import json
 
-# import scraperwiki
-# import lxml.html
+import requests
+import scraperwiki.sqlite as db
+
+PARENT_ID = 2579# Borough codes
+
+
+
+def iter_children_areas_kml(parent_id):
+    children = getjs('http://mapit.mysociety.org/area/%s/children' % parent_id)
+    for id, data in children.items():
+        kml = requests.get('http://mapit.mysociety.org/area/%s.kml' % id).content
+        entry = {'parent_area': int(data['parent_area']),
+                 'id': int(id),
+                 'name': data['name'],
+                 'kml': kml}
+        yield entry
+
+
+def getjs(url, **opts):
+    return json.loads(requests.get(url, **opts).content)
+
+
 #
-# # Read in a page
-# html = scraperwiki.scrape("http://foo.com")
+# Main
 #
-# # Find something on the page using css selectors
-# root = lxml.html.fromstring(html)
-# root.cssselect("div[align='left']")
-#
-# # Write out to the sqlite database using scraperwiki library
+data = list(iter_children_areas_kml(PARENT_ID))
+db.save(['id'], data, verbose=0)
+
 # scraperwiki.sqlite.save(unique_keys=['name'], data={"name": "susan", "occupation": "software developer"})
 #
 # # An arbitrary query against the database
